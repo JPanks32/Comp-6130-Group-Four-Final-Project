@@ -12,34 +12,60 @@ from keras.models import Sequential
 from keras.layers.core import Dropout, Activation, Dense
 from keras.utils import np_utils
 
-#10 different numbers.
+# 10 different numbers.
 num_classes = 10
-#Sets the dropout ratio.
+# Sets the dropout ratio.
 dropout_prob = 0.2
 
-#loads in the dataset.
+# loads in the dataset.
 (x_train, y_train), (x_test, y_test) = mnist.load_data()
-
-#Reshapes the images from 28x28 to 784 array
-x_train = x_train.reshape(60000, 784)
-x_test = x_test.reshape(10000, 784)
-
+pixel_count = 784
+# Reshapes the images from 28x28 to 784 array
+x_train = x_train.reshape(60000, pixel_count)
+x_test = x_test.reshape(10000, pixel_count)
 
 # For preprocssing MNIST: https://www.kaggle.com/code/damienbeneschi/mnist-eda-preprocessing-classifiers/notebook
 
+# Changes imput from scalar RGB value to binary White or Black
+x_train = np.floor(x_train / 128).astype(int)
+x_test = np.floor(x_test / 128).astype(int)
+x_all = np.append(x_train, x_test, axis=0)
+y_all = np.append(y_train, y_test, axis=0)
+print("x train: ", x_train.shape)
+print("x test: ", x_test.shape)
+print("x all: ", x_all.shape)
+print("y train: ", y_train.shape)
+print("y test: ", y_test.shape)
+print("y all: ", y_all.shape)
 
-#Changes imput from scalar RGB value to binary White or Black
-x_train = x_train / 255
-x_test = x_test / 255
-#Remove Pixles of constant intensity to process faster
 
-    
+# Remove Pixles of constant intensity to process faster
+def remove_constant_intensity(all_x):
+    trimmed_x = np.copy(all_x)
+    dropped_pix = []
+    for inv_col in range(784):
+        # starts dropping from the end of the array to not change remaining indexes when dropping
+        col = 783 - inv_col
+        if trimmed_x[:, col].max() == 0 or trimmed_x[:, col].min() == 1:
 
-def runDropout():
+            trimmed_x = np.delete(trimmed_x, col, 1)
+            dropped_pix.append(col)
+
+
+    print('dropped pixels: ', dropped_pix)
+    return trimmed_x, dropped_pix
+
+
+x_trimmed, pix_dropped = remove_constant_intensity(x_all)
+print("x trimmed", x_trimmed.shape)
+pixel_count = x_trimmed.shape[1]
+
+
+def runDropout(pixel_count):
     dropout_model = Sequential()
-    dropout_model.add(Dense(4096, input_shape=(784,), Activation="relu"))
+    dropout_model.add(Dense(4096, input_shape=(pixel_count,), Activation="relu"))
     dropout_model.add(Dropout(dropout_prob))
-    dropout_model.add(Dense(4096, input_shape=(784,), Activation="relu"))
+    dropout_model.add(Dense(4096, input_shape=(pixel_count,), Activation="relu"))
     dropout_model.add(Dropout(dropout_prob))
 
 
