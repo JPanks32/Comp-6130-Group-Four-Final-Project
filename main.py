@@ -7,6 +7,7 @@
 # Link to dropout turorial
 import tensorflow as tf
 import numpy as np
+from keras import Sequential
 from keras.datasets import mnist
 from keras.models import Sequential
 from keras.layers.core import Dropout, Activation, Dense
@@ -15,7 +16,7 @@ from keras.utils import np_utils
 # 10 different numbers.
 num_classes = 10
 # Sets the dropout ratio.
-dropout_prob = 0.2
+dropout_prob = 0.5
 
 # loads in the dataset.
 (x_train, y_train), (x_test, y_test) = mnist.load_data()
@@ -26,7 +27,7 @@ x_test = x_test.reshape(10000, pixel_count)
 
 # For preprocssing MNIST: https://www.kaggle.com/code/damienbeneschi/mnist-eda-preprocessing-classifiers/notebook
 
-# Changes imput from scalar RGB value to binary White or Black
+# Changes input from scalar RGB value to binary White or Black
 x_train = np.floor(x_train / 128).astype(int)
 x_test = np.floor(x_test / 128).astype(int)
 x_all = np.append(x_train, x_test, axis=0)
@@ -60,13 +61,24 @@ x_trimmed, pix_dropped = remove_constant_intensity(x_all)
 print("x trimmed", x_trimmed.shape)
 pixel_count = x_trimmed.shape[1]
 
-
-def runDropout(pixel_count):
+# To save the model https://www.tensorflow.org/tutorials/keras/save_and_load
+def getDropoutModel(pixel_count):
     dropout_model = Sequential()
-    dropout_model.add(Dense(4096, input_shape=(pixel_count,), Activation="relu"))
+    dropout_model.add(Dense(4096, input_shape=(pixel_count,), activation="relu"))
     dropout_model.add(Dropout(dropout_prob))
-    dropout_model.add(Dense(4096, input_shape=(pixel_count,), Activation="relu"))
+    dropout_model.add(Dense(4096, input_shape=(pixel_count,), activation="relu"))
     dropout_model.add(Dropout(dropout_prob))
+    dropout_model.add(Activation('softmax'))
+    dropout_model.compile(loss='categorical_crossentropy', optimizer='adam')
+    return dropout_model
+
+model = getDropoutModel(pixel_count)
+
+model.fit(x_train, y_train,
+          batch_size=128, nb_epoch=4,
+          show_accuracy=True, verbose=1,
+          validation_data=(x_test, y_test))
+
 
 
 def print_hi(name):
