@@ -8,6 +8,7 @@
 import tensorflow as tf
 import numpy as np
 from keras import Sequential
+from keras import metrics
 from keras.callbacks import ModelCheckpoint
 from keras.datasets import mnist
 from keras.models import Sequential
@@ -71,7 +72,8 @@ def getDropoutModel():
         Dense(4096, activation="relu"),
         Dropout(dropout_prob),
         Dense(10, activation="softmax")])
-    dropout_model.compile(loss='sparse_categorical_crossentropy', optimizer='adam')
+    dropout_model.compile(loss='sparse_categorical_crossentropy', metrics=[metrics.SparseCategoricalAccuracy()],
+                          optimizer='adam')
     return dropout_model, "dropoutCheckpoints"
 
 
@@ -80,7 +82,8 @@ def getBaseModel():
         Dense(4096, input_shape=(pixel_count,), activation="relu"),
         Dense(4096, activation="relu"),
         Dense(10, activation="softmax")])
-    base_model.compile(loss='sparse_categorical_crossentropy', optimizer='adam')
+    base_model.compile(loss='sparse_categorical_crossentropy', metrics=[metrics.SparseCategoricalAccuracy()],
+                       optimizer='adam')
     return base_model, "baseCheckpoints"
 
 
@@ -110,24 +113,29 @@ baseModel.fit(x_train_trimmed,
               verbose=1,
               callbacks=[base_callback_checkpoint])
 
+baseScore = baseModel.evaluate(x_test_trimmed, y_test, verbose=1)
+
+print('Base Test loss:', baseScore[0])
+print('Base Test accuracy:', baseScore[1])
+
 dropoutModel.fit(x_train_trimmed,
                  y_train,
                  epochs=10,
-                 batch_size=256,
+                 batch_size=32,
                  validation_data=(x_test_trimmed, y_test),
                  verbose=1,
                  callbacks=[dropout_callback_checkpoint])
 
 baseScore = baseModel.evaluate(x_test_trimmed, y_test,
-                               show_accuracy=True, verbose=1)
+                               verbose=1)
 
 dropoutScore = dropoutModel.evaluate(x_test_trimmed, y_test,
                                      show_accuracy=True, verbose=1)
 
-print('Base Test score:', baseScore[0])
+print('Base Test loss:', baseScore[0])
 print('Base Test accuracy:', baseScore[1])
 
-print('Dropout Test score:', dropoutScore[0])
+print('Dropout Test loss:', dropoutScore[0])
 print('Dropout Test accuracy:', dropoutScore[1])
 
 
