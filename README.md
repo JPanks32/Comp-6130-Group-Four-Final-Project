@@ -3,6 +3,8 @@ Group 4 Final Project to reproduce the MNIST results in Dropout: A Simple Way to
 
 # checking the pull request.
 
+# adding readme to check
+
 -Jay pankey
 -HariPrabhanjan
 -Praneeth
