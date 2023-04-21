@@ -8,6 +8,7 @@
 import tensorflow as tf
 import numpy as np
 from keras import Sequential
+from keras.callbacks import ModelCheckpoint
 from keras.datasets import mnist
 from keras.models import Sequential
 from keras.layers.core import Dropout, Activation, Dense
@@ -41,44 +42,93 @@ print("y all: ", y_all.shape)
 
 
 # Remove Pixles of constant intensity to process faster
-def remove_constant_intensity(all_x):
+def remove_constant_intensity(all_x, trimmed_x_train, trimmed_x_test):
     trimmed_x = np.copy(all_x)
     dropped_pix = []
     for inv_col in range(784):
         # starts dropping from the end of the array to not change remaining indexes when dropping
         col = 783 - inv_col
         if trimmed_x[:, col].max() == 0 or trimmed_x[:, col].min() == 1:
-
-            trimmed_x = np.delete(trimmed_x, col, 1)
+            trimmed_x_train = np.delete(trimmed_x_train, col, 1)
+            trimmed_x_test = np.delete(trimmed_x_test, col, 1)
             dropped_pix.append(col)
 
-
     print('dropped pixels: ', dropped_pix)
-    return trimmed_x, dropped_pix
+    return trimmed_x_train, trimmed_x_test, dropped_pix
 
 
-x_trimmed, pix_dropped = remove_constant_intensity(x_all)
-print("x trimmed", x_trimmed.shape)
-pixel_count = x_trimmed.shape[1]
+x_train_trimmed, x_test_trimmed, pix_dropped = remove_constant_intensity(x_all, x_train, x_test)
+print("x trimmed", x_train_trimmed.shape)
+pixel_count = x_train_trimmed.shape[1]
+
 
 # To save the model https://www.tensorflow.org/tutorials/keras/save_and_load
-def getDropoutModel(pixel_count):
-    dropout_model = Sequential()
-    dropout_model.add(Dense(4096, input_shape=(pixel_count,), activation="relu"))
-    dropout_model.add(Dropout(dropout_prob))
-    dropout_model.add(Dense(4096, input_shape=(pixel_count,), activation="relu"))
-    dropout_model.add(Dropout(dropout_prob))
-    dropout_model.add(Activation('softmax'))
-    dropout_model.compile(loss='categorical_crossentropy', optimizer='adam')
-    return dropout_model
+def getDropoutModel():
+    print(pixel_count)
+    dropout_model = Sequential([
+        Dense(4096, input_shape=(pixel_count,), activation="relu"),
+        Dropout(dropout_prob),
+        Dense(4096, activation="relu"),
+        Dropout(dropout_prob),
+        Dense(10, activation="softmax")])
+    dropout_model.compile(loss='sparse_categorical_crossentropy', optimizer='adam')
+    return dropout_model, "dropoutCheckpoints"
 
-model = getDropoutModel(pixel_count)
 
-model.fit(x_train, y_train,
-          batch_size=128, nb_epoch=4,
-          show_accuracy=True, verbose=1,
-          validation_data=(x_test, y_test))
+def getBaseModel():
+    base_model = Sequential([
+        Dense(4096, input_shape=(pixel_count,), activation="relu"),
+        Dense(4096, activation="relu"),
+        Dense(10, activation="softmax")])
+    base_model.compile(loss='sparse_categorical_crossentropy', optimizer='adam')
+    return base_model, "baseCheckpoints"
 
+
+baseModel, baseCheckpointPath = getBaseModel()
+baseCheckpointPath = baseCheckpointPath + "/cp-epoch-{epoch:02d}-loss-{val_loss:.2f}.keras"
+
+dropoutModel, dropoutCheckpointPath = getDropoutModel()
+dropoutCheckpointPath = dropoutCheckpointPath + "/cp-epoch-{epoch:02d}-loss-{val_loss:.2f}.keras"
+
+base_callback_checkpoint = ModelCheckpoint(filepath=baseCheckpointPath,
+                                           monitor='val_accuracy',
+                                           verbose=1,
+                                           save_weights_only=True,
+                                           save_best_only=False)
+
+dropout_callback_checkpoint = ModelCheckpoint(filepath=dropoutCheckpointPath,
+                                              monitor='val_accuracy',
+                                              verbose=1,
+                                              save_weights_only=True,
+                                              save_best_only=False)
+
+baseModel.fit(x_train_trimmed,
+              y_train,
+              epochs=10,
+              batch_size=256,
+              validation_data=(x_test_trimmed, y_test),
+              verbose=1,
+              callbacks=[base_callback_checkpoint])
+
+dropoutModel.fit(x_train_trimmed,
+                 y_train,
+                 epochs=10,
+                 batch_size=256,
+                 validation_data=(x_test_trimmed, y_test),
+                 verbose=1,
+                 callbacks=[dropout_callback_checkpoint])
+
+baseScore = baseModel.evaluate(x_test_trimmed, y_test,
+                               show_accuracy=True, verbose=1)
+
+dropoutScore = dropoutModel.evaluate(x_test_trimmed, y_test,
+                                     show_accuracy=True, verbose=1)
+
+print('Base Test score:', baseScore[0])
+print('Base Test accuracy:', baseScore[1])
+
+print('Dropout Test score:', dropoutScore[0])
+print('Dropout Test accuracy:', dropoutScore[1])
 
 
 def print_hi(name):
