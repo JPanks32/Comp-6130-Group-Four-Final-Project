@@ -72,7 +72,8 @@ def getDropoutModel():
         Dense(4096, activation="relu"),
         Dropout(dropout_prob),
         Dense(10, activation="softmax")])
-    dropout_model.compile(loss='sparse_categorical_crossentropy', metrics=[metrics.SparseCategoricalAccuracy()],
+    dropout_model.compile(loss='sparse_categorical_crossentropy',
+                          metrics=[metrics.SparseCategoricalAccuracy()],
                           optimizer='adam')
     return dropout_model, "dropoutCheckpoints"
 
@@ -82,7 +83,8 @@ def getBaseModel():
         Dense(4096, input_shape=(pixel_count,), activation="relu"),
         Dense(4096, activation="relu"),
         Dense(10, activation="softmax")])
-    base_model.compile(loss='sparse_categorical_crossentropy', metrics=[metrics.SparseCategoricalAccuracy()],
+    base_model.compile(loss='sparse_categorical_crossentropy',
+                       metrics=[metrics.SparseCategoricalAccuracy()],
                        optimizer='adam')
     return base_model, "baseCheckpoints"
 
@@ -91,7 +93,7 @@ baseModel, baseCheckpointPath = getBaseModel()
 baseCheckpointPath = baseCheckpointPath + "/cp-epoch-{epoch:02d}-loss-{val_loss:.2f}.keras"
 
 dropoutModel, dropoutCheckpointPath = getDropoutModel()
-dropoutCheckpointPath = dropoutCheckpointPath + "/cp-epoch-{epoch:02d}-loss-{val_loss:.2f}.keras"
+dropoutCheckpointPath = dropoutCheckpointPath + "/cp256-epoch-{epoch:02d}-loss-{val_loss:.2f}.keras"
 
 base_callback_checkpoint = ModelCheckpoint(filepath=baseCheckpointPath,
                                            monitor='val_accuracy',
@@ -106,31 +108,34 @@ dropout_callback_checkpoint = ModelCheckpoint(filepath=dropoutCheckpointPath,
                                               save_best_only=False)
 
 baseModel.fit(x_train_trimmed,
-              y_train,
+             y_train,
               epochs=10,
-              batch_size=256,
-              validation_data=(x_test_trimmed, y_test),
-              verbose=1,
-              callbacks=[base_callback_checkpoint])
+             batch_size=256,
+            validation_data=(x_test_trimmed, y_test),
+           verbose=1,
+          callbacks=[base_callback_checkpoint])
 
-baseScore = baseModel.evaluate(x_test_trimmed, y_test, verbose=1)
+# baseScore = baseModel.evaluate(x_test_trimmed, y_test, verbose=1)
 
-print('Base Test loss:', baseScore[0])
-print('Base Test accuracy:', baseScore[1])
+# print('Base Test loss:', baseScore[0])
+# print('Base Test accuracy:', baseScore[1])
+
 
 dropoutModel.fit(x_train_trimmed,
-                 y_train,
-                 epochs=10,
-                 batch_size=32,
-                 validation_data=(x_test_trimmed, y_test),
-                 verbose=1,
-                 callbacks=[dropout_callback_checkpoint])
-
+                y_train,
+               epochs=10,
+              batch_size=256,
+             validation_data=(x_test_trimmed, y_test),
+            verbose=1,
+           callbacks=[dropout_callback_checkpoint])
+#baseModel.load_weights('baseCheckpoints/cp-epoch-10-loss-0.11.keras')
+#dropoutModel.load_weights('dropoutCheckpoints/cp256-epoch-10-loss-0.10.keras')
+# dropoutModel.load_weights('dropoutCheckpoints/cp-epoch-10-loss-0.12.keras')
 baseScore = baseModel.evaluate(x_test_trimmed, y_test,
                                verbose=1)
 
 dropoutScore = dropoutModel.evaluate(x_test_trimmed, y_test,
-                                     show_accuracy=True, verbose=1)
+                                     verbose=1)
 
 print('Base Test loss:', baseScore[0])
 print('Base Test accuracy:', baseScore[1])
