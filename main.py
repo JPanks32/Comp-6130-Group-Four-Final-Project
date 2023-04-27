@@ -7,13 +7,14 @@
 # Link to dropout turorial
 import tensorflow as tf
 import numpy as np
-from keras import Sequential
+#from keras import Sequential
 from keras import metrics
 from keras.callbacks import ModelCheckpoint
 from keras.datasets import mnist
 from keras.models import Sequential
 from keras.layers.core import Dropout, Activation, Dense
 from keras.utils import np_utils
+import matplotlib.pyplot as plt
 
 # 10 different numbers.
 num_classes = 10
@@ -30,12 +31,12 @@ x_test = x_test.reshape(10000, pixel_count)
 # For preprocssing MNIST: https://www.kaggle.com/code/damienbeneschi/mnist-eda-preprocessing-classifiers/notebook
 
 # Changes input from scalar RGB value to binary White or Black
-x_train = np.floor(x_train / 128).astype(int)
-x_test = np.floor(x_test / 128).astype(int)
-x_all = np.append(x_train, x_test, axis=0)
+x_train_trimmed = np.floor(x_train / 128).astype(int)
+x_test_trimmed = np.floor(x_test / 128).astype(int)
+x_all = np.append(x_train_trimmed, x_test_trimmed, axis=0)
 y_all = np.append(y_train, y_test, axis=0)
-print("x train: ", x_train.shape)
-print("x test: ", x_test.shape)
+print("x train: ", x_train_trimmed.shape)
+print("x test: ", x_test_trimmed.shape)
 print("x all: ", x_all.shape)
 print("y train: ", y_train.shape)
 print("y test: ", y_test.shape)
@@ -58,7 +59,7 @@ def remove_constant_intensity(all_x, trimmed_x_train, trimmed_x_test):
     return trimmed_x_train, trimmed_x_test, dropped_pix
 
 
-x_train_trimmed, x_test_trimmed, pix_dropped = remove_constant_intensity(x_all, x_train, x_test)
+x_train_trimmed, x_test_trimmed, pix_dropped = remove_constant_intensity(x_all, x_train_trimmed, x_test_trimmed)
 print("x trimmed", x_train_trimmed.shape)
 pixel_count = x_train_trimmed.shape[1]
 
@@ -107,13 +108,13 @@ dropout_callback_checkpoint = ModelCheckpoint(filepath=dropoutCheckpointPath,
                                               save_weights_only=True,
                                               save_best_only=False)
 
-baseModel.fit(x_train_trimmed,
-             y_train,
-              epochs=10,
-             batch_size=256,
-            validation_data=(x_test_trimmed, y_test),
-           verbose=1,
-          callbacks=[base_callback_checkpoint])
+#baseModel.fit(x_train_trimmed,
+#              y_train,
+#              epochs=10,
+#              batch_size=256,
+#              validation_data=(x_test_trimmed, y_test),
+#              verbose=1,
+ #             callbacks=[base_callback_checkpoint])
 
 # baseScore = baseModel.evaluate(x_test_trimmed, y_test, verbose=1)
 
@@ -121,16 +122,16 @@ baseModel.fit(x_train_trimmed,
 # print('Base Test accuracy:', baseScore[1])
 
 
-dropoutModel.fit(x_train_trimmed,
-                y_train,
-               epochs=10,
-              batch_size=256,
-             validation_data=(x_test_trimmed, y_test),
-            verbose=1,
-           callbacks=[dropout_callback_checkpoint])
-#baseModel.load_weights('baseCheckpoints/cp-epoch-10-loss-0.11.keras')
-#dropoutModel.load_weights('dropoutCheckpoints/cp256-epoch-10-loss-0.10.keras')
-# dropoutModel.load_weights('dropoutCheckpoints/cp-epoch-10-loss-0.12.keras')
+#dropoutModel.fit(x_train_trimmed,
+#                 y_train,
+#                 epochs=10,
+#                 batch_size=256,
+#                 validation_data=(x_test_trimmed, y_test),
+#                 verbose=1,
+#                 callbacks=[dropout_callback_checkpoint])
+baseModel.load_weights('baseCheckpoints/cp-epoch-10-loss-0.12.keras')
+# dropoutModel.load_weights('dropoutCheckpoints/cp256-epoch-10-loss-0.10.keras')
+dropoutModel.load_weights('dropoutCheckpoints/cp256-epoch-10-loss-0.08.keras')
 baseScore = baseModel.evaluate(x_test_trimmed, y_test,
                                verbose=1)
 
@@ -143,6 +144,26 @@ print('Base Test accuracy:', baseScore[1])
 print('Dropout Test loss:', dropoutScore[0])
 print('Dropout Test accuracy:', dropoutScore[1])
 
+# The predict_classes function outputs the highest probability class
+# according to the trained classifier for each input example.
+#predictions = np.around(dropoutModel.predict(x_test_trimmed)).astype(int)
+predicted_classes = np.argmax(dropoutModel.predict(x_test_trimmed), axis=1)
+# Check which items we got right / wrong
+correct_predictions = np.nonzero(predicted_classes == y_test)[0]
+incorrect_predictions = np.nonzero(predicted_classes != y_test)[0]
+
+plt.figure()
+for i, correct in enumerate(correct_predictions[:9]):
+    plt.subplot(3, 3, i + 1)
+    plt.imshow(x_test[correct].reshape(28, 28), cmap='gray', interpolation='none')
+    plt.title("Predicted {}, Class {}".format(predicted_classes[correct], y_test[correct]))
+plt.show()
+plt.figure()
+for i, incorrect in enumerate(incorrect_predictions[:9]):
+    plt.subplot(3, 3, i + 1)
+    plt.imshow(x_test[incorrect].reshape(28, 28), cmap='gray', interpolation='none')
+    plt.title("Predicted {}, Class {}".format(predicted_classes[incorrect], y_test[incorrect]))
+plt.show()
 
 def print_hi(name):
     # Use a breakpoint in the code line below to debug your script.

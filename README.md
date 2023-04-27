@@ -8,3 +8,6 @@ Group 4 Final Project to reproduce the MNIST results in Dropout: A Simple Way to
 -Jay pankey
 -HariPrabhanjan
 -Praneeth
+
+-pip install tensorflow
+-pip install numpy
