@@ -153,16 +153,19 @@ correct_predictions = np.nonzero(predicted_classes == y_test)[0]
 incorrect_predictions = np.nonzero(predicted_classes != y_test)[0]
 
 plt.figure()
+
 for i, correct in enumerate(correct_predictions[:9]):
     plt.subplot(3, 3, i + 1)
     plt.imshow(x_test[correct].reshape(28, 28), cmap='gray', interpolation='none')
     plt.title("Predicted {}, Class {}".format(predicted_classes[correct], y_test[correct]))
+plt.tight_layout()
 plt.show()
 plt.figure()
 for i, incorrect in enumerate(incorrect_predictions[:9]):
     plt.subplot(3, 3, i + 1)
     plt.imshow(x_test[incorrect].reshape(28, 28), cmap='gray', interpolation='none')
     plt.title("Predicted {}, Class {}".format(predicted_classes[incorrect], y_test[incorrect]))
+plt.tight_layout()
 plt.show()
 
 def print_hi(name):
