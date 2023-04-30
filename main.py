@@ -64,7 +64,7 @@ print("x trimmed", x_train_trimmed.shape)
 pixel_count = x_train_trimmed.shape[1]
 
 
-# To save the model https://www.tensorflow.org/tutorials/keras/save_and_load
+# Create the Models
 def getDropoutModel():
     print(pixel_count)
     dropout_model = Sequential([
@@ -89,7 +89,7 @@ def getBaseModel():
                        optimizer='adam')
     return base_model, "baseCheckpoints"
 
-
+#Saves the model to cp-epoch-{The Epoch Number}-loss-{The Loss Value}.keras
 baseModel, baseCheckpointPath = getBaseModel()
 baseCheckpointPath = baseCheckpointPath + "/cp-epoch-{epoch:02d}-loss-{val_loss:.2f}.keras"
 
