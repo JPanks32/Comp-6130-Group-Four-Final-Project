@@ -107,31 +107,35 @@ dropout_callback_checkpoint = ModelCheckpoint(filepath=dropoutCheckpointPath,
                                               verbose=1,
                                               save_weights_only=True,
                                               save_best_only=False)
+def baseFit():
+    baseModel.fit(x_train_trimmed,
+                y_train,
+                epochs=10,
+                batch_size=256,
+                validation_data=(x_test_trimmed, y_test),
+                verbose=1,
+                callbacks=[base_callback_checkpoint])
+    return baseModel
 
-#baseModel.fit(x_train_trimmed,
-#              y_train,
-#              epochs=10,
-#              batch_size=256,
-#              validation_data=(x_test_trimmed, y_test),
-#              verbose=1,
- #             callbacks=[base_callback_checkpoint])
+def dropoutFit():
+    dropoutModel.fit(x_train_trimmed,
+                    y_train,
+                    epochs=10,
+                    batch_size=256,
+                    validation_data=(x_test_trimmed, y_test),
+                    verbose=1,
+                    callbacks=[dropout_callback_checkpoint])
+    return dropoutModel
 
-# baseScore = baseModel.evaluate(x_test_trimmed, y_test, verbose=1)
+#Train the models
+#baseModel = baseFit()
+#dropoutModel = dropoutFit()
 
-# print('Base Test loss:', baseScore[0])
-# print('Base Test accuracy:', baseScore[1])
-
-
-#dropoutModel.fit(x_train_trimmed,
-#                 y_train,
-#                 epochs=10,
-#                 batch_size=256,
-#                 validation_data=(x_test_trimmed, y_test),
-#                 verbose=1,
-#                 callbacks=[dropout_callback_checkpoint])
+#Load the models from previously trained checkpoints
 baseModel.load_weights('baseCheckpoints/cp-epoch-10-loss-0.12.keras')
-# dropoutModel.load_weights('dropoutCheckpoints/cp256-epoch-10-loss-0.10.keras')
 dropoutModel.load_weights('dropoutCheckpoints/cp256-epoch-10-loss-0.08.keras')
+
+#Evaluate the models
 baseScore = baseModel.evaluate(x_test_trimmed, y_test,
                                verbose=1)
 
@@ -153,13 +157,15 @@ correct_predictions = np.nonzero(predicted_classes == y_test)[0]
 incorrect_predictions = np.nonzero(predicted_classes != y_test)[0]
 
 plt.figure()
-
+#Show the first nine correct predictions
 for i, correct in enumerate(correct_predictions[:9]):
     plt.subplot(3, 3, i + 1)
     plt.imshow(x_test[correct].reshape(28, 28), cmap='gray', interpolation='none')
     plt.title("Predicted {}, Class {}".format(predicted_classes[correct], y_test[correct]))
 plt.tight_layout()
 plt.show()
+
+#Show the first nine incorrect predictions
 plt.figure()
 for i, incorrect in enumerate(incorrect_predictions[:9]):
     plt.subplot(3, 3, i + 1)

@@ -1,0 +1,5 @@
+Make File
+Tensorflow 2.8.0
+Numpy 1.22.2
+Keras 2.8.0
+Matplotlib 3.5.1
